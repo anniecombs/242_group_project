@@ -17,3 +17,279 @@ knitr::opts_chunk$set(echo = TRUE)
 ### 1.National Parks Data (have $ spent and guest count) EASIEST BY FAR
 ### 2.I have lots of data on spending in Galapagos
 ### 3.Costa Rica also an option
+
+## The Fishery Example from HW
+## Example 3: Stock Pollutant {.tabset}
+
+This problem involves a stock pollutant that evolves according to $Z_{t+1}=z_t(1-\gamma)+\alpha*q_t$, where $\gamma$ captures how much pollution degrades each period and $\alpha$ captures how much pollution is produced by production $q_t$.  Suppose that production is worth $p$ per unit of output, so net revenues are $pq$.  Damages caused by pollution are $C=aZ_t - bZ_t^2$.  The objective is to maximize the present value of net benefits (PNVB) from time 0 to time 10: 
+
+$$
+\max_q \sum^{t=10}_{t=0}\rho^t(pq_t-(aZ_t-bZ_t^2))
+$$
+subject to $Z_{t+1}=z_t(1-\gamma)+\alpha*q_t$ and $Z_0$ given. Use the following parameter values: $\rho=\frac{1}{1.05}$, p=100, a= 2, b=-0.25,$\gamma=0.2$, $\alpha=2$, and $Z_o$=20. 
+
+
+### A. 
+
+What is the amount of production $q_t$ in each period according to the solution? 
+
+<span style="color: blue;">**Solution**
+</span>
+
+
+
+```{r}
+
+
+# Notice that period is not included as a parameter of the function
+
+obj_fcn_stock<-function(choice,int_state,a,b,gamma,p,alpha,discount){
+
+  
+# The state and benefits vectors will have the same length as the choice vector    
+  
+    #make storage vectors
+  state<-vector(mode="numeric",length=length(choice))
+  benefits<-vector(mode="numeric",length=length(choice))
+  
+
+  #initial state and benefits
+  
+  
+  state[1]=int_state
+  
+  benefits[1]=p*choice[1]-(a*state[1]-b*state[1]^2)
+
+#  The loop goes from 2 to whatver the length of choice ends up being
+    
+  for(i in 2:length(choice)){
+    
+# Add the stock dyanmics
+    
+    state[i]=state[i-1]*(1-gamma)+alpha*choice[i-1] #Add the time from the choice to the state
+    
+    
+  benefits[i]=p*choice[i]-(a*state[i]-b*state[i]^2)
+       
+             
+  }
+  
+  
+  #define period
+  
+# Populating a vector with 0,1,... that ends with the length of the benefits vector
+  
+  t=seq(from=0,length.out=length(benefits))
+  
+  pv=discount^t*benefits
+    
+  npv=sum(pv)
+  
+  return(-npv)
+  
+  
+}
+
+
+local_opts<-list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15)
+options=list("algorithm"="NLOPT_LN_AUGLAG",xtol_rel=1e-15,maxeval=16000,"local_opts"=local_opts)
+
+# Because I didn't include period as a parameter in the function, I need to define it here.
+
+period=11
+
+#Use lb to say we cannot have negative extraction, ub says extraction cannot exceed 10
+
+out_3a=nloptr(x0=rep(1,period),eval_f=obj_fcn_stock,
+              lb=rep(0,period),
+              #ub=rep(10,period),
+              opts = options,int_state=20,discount=1/1.05,a=2,b=-.25,gamma=0.2,alpha=2,p=100)
+
+
+ta_solution=round(out_3a$solution,5)
+
+ta_value=round(-out_3a$objective,3)
+
+```
+
+
+
+<span style="color: blue;">With a higher price, it is worth it to increase production and have a large stock of Z.
+</span>
+
+
+
+```{r}
+## Function for making a table
+
+stock<-function(choice,int_state=20,a=2,b=-0.25,gamma=.2,p=100,alpha=2,discount=1/1.05){
+  
+  
+    #make storage vectors
+  state<-vector(mode="numeric",length=length(choice))
+  benefits<-vector(mode="numeric",length=length(choice))
+  
+
+  #initial state and benefits
+  
+  
+  state[1]=int_state
+  
+  benefits[1]=p*choice[1]-(a*state[1]-b*state[1]^2)
+  
+  for(i in 2:length(choice)){
+    
+# Add the stock dyanmics
+    
+    state[i]=state[i-1]*(1-gamma)+alpha*choice[i-1] #Add the time from the choice to the state
+    
+  benefits[i]=p*choice[i]-(a*state[i]-b*state[i]^2)
+             
+  }
+  
+  #define period and discount
+  t=seq(from=0,length.out=length(benefits))
+  
+  pv=discount^t*benefits
+  
+  
+  return(data.frame(t=t,PV=pv,Z=state,q=choice))
+
+}
+
+tbl_3a=round(stock(out_3a$solution),1)
+
+kable(tbl_3a)
+```
+
+
+## Stock Midterm Example
+
+obj_fcn_stock<-function(choice,int_state,a,b,gamma,p,alpha,discount,target){
+  
+  
+    #make storage vectors
+  state<-vector(mode="numeric",length=0)
+  benefits<-vector(mode="numeric",length=length(choice))
+  
+
+  #initial state and benefits
+  
+  
+  state[1]=int_state
+  
+  benefits[1]=p*choice[1]-(a*state[1]-b*state[1]^2)
+  
+  for(i in 2:length(choice)){
+    
+# Add the stock dyanmics
+    
+    state[i]=state[i-1]*(1-gamma)+alpha*choice[i-1] #Add the time from the choice to the state
+    
+    
+  benefits[i]=p*choice[i]-(a*state[i]-b*state[i]^2)
+       
+             
+  }
+  
+  
+  #define period
+  t=seq(from=0,length.out=length(benefits))
+  
+  pv=discount^t*benefits
+    
+  npv=sum(pv)
+  
+  return(-npv)
+  
+  
+}
+
+constraint_flow<-function(choice,int_state,a,b,gamma,p,alpha,discount,target){
+  
+  
+  state<-vector(mode="numeric",length=0)
+  const<-vector(mode="numeric",length=0)
+  #initial state
+  state[1]=int_state
+  
+  for(i in 2:length(choice)){
+    
+    #State evoles through the choice like in obj function
+    state[i]=state[i-1]*(1-gamma)+alpha*choice[i-1] 
+    
+  }
+  
+  # Find the state after the last extraction i.e Z11
+  
+  state_last=state[length(state)]*(1-gamma)+alpha*choice[length(choice)]
+  
+  
+const=state_last-target
+  
+  return(const)
+}
+
+
+
+local_opts<-list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15)
+options=list("algorithm"="NLOPT_LN_AUGLAG",xtol_rel=1e-15,maxeval=16000,"local_opts"=local_opts)
+
+# This lets you indicate the value at the end.
+
+period=10
+
+#Use lb to say we cannot have negative extraction
+
+out_3a=nloptr(x0=rep(1,period),eval_f=obj_fcn_stock,
+              eval_g_eq=constraint_flow,
+              lb=rep(0,period),ub=rep(20,period),opts = options,int_state=40,discount=1/1.04,a=2,b=-.25,gamma=0.2,alpha=2,target=25,p=100)
+
+
+ta_solution=round(out_3a$solution,5)
+
+ta_value=round(-out_3a$objective,3)
+
+#If we want a table
+## Function for making a table
+
+stock<-function(choice,int_state,a=2,b=-0.25,gamma=.2,p=100,alpha=2,discount=1/1.04,target=25){
+  
+  
+    #make storage vectors
+  state<-vector(mode="numeric",length=0)
+  benefits<-vector(mode="numeric",length=length(choice))
+  
+
+  #initial state and benefits
+  
+  
+  state[1]=int_state
+  
+  benefits[1]=p*choice[1]-(a*state[1]-b*state[1]^2)
+  
+  for(i in 2:length(choice)){
+    
+# Add the stock dyanmics
+    
+    state[i]=state[i-1]*(1-gamma)+alpha*choice[i-1] #Add the time from the choice to the state
+    
+  benefits[i]=p*choice[i]-(a*state[i]-b*state[i]^2)
+             
+  }
+  
+  #define period and discount
+  t=seq(from=0,length.out=length(benefits))
+ 
+  
+  pv=discount^t*benefits
+  
+  state_last=state[length(state)]*(1-gamma)+alpha*choice[length(choice)]
+  
+  return(data.frame(t=t,PV=pv,Z=state,q=choice,state_last=state_last))
+
+}
+
+tbl_3a=round(stock(out_3a$solution,int_state = 40),1)
+
+kable(tbl_3a)
