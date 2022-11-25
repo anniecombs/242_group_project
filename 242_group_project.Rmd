@@ -7,16 +7,16 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(kableExtra)
 ```
 
 ## Background Info to Build Code From
 
 ### Picking a case study and finding number of tourists there- no need to figure out env quality according to Plantinga. Just focus on tourists and assign a certain number of damage to each and go for a steady state like the fishery stock problem.
 
-### Case Studies We Can Use
-### 1.National Parks Data (have $ spent and guest count) EASIEST BY FAR
-### 2.I have lots of data on spending in Galapagos
-### 3.Costa Rica also an option
+
+### Case Study data
 
 ## The Fishery Example from HW
 ## Example 3: Stock Pollutant {.tabset}
