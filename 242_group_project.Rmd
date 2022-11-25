@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(kableExtra)
+library(here)
 ```
 
 ## Background Info to Build Code From
@@ -17,6 +18,11 @@ library(kableExtra)
 
 
 ### Case Study data
+```{r}
+yosemite.data <- read_csv(here("data","Yosemite.data.csv"))
+
+#use this data to determine the economic value of tourists in Yosemite valley and the current number of tourists in the space
+```
 
 ## The Fishery Example from HW
 ## Example 3: Stock Pollutant {.tabset}
